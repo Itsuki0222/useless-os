@@ -1,0 +1,8 @@
+*.elf
+*.fd
+*.o
+*.hex
+iso_root/
+*.iso
+font.py
+test.html
