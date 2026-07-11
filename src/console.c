@@ -3,18 +3,29 @@
 #include "unifont.h"
 #include "console.h"
 
+typedef struct {
+    u32 x;
+    u32 y;
+} Console;
+
 extern volatile const struct limine_framebuffer_request fb_req;
+static volatile Console cs;
+static u32 pixels_per_line;
 
 struct limine_framebuffer *fb;
 u32 *fb_ptr;
+u32 x = 0;
+
 
 void init_graphics(void) {
     fb = fb_req.response->framebuffers[0];
     fb_ptr = fb->address;
+    cs.x, cs.y = 0;
+    pixels_per_line = fb->pitch / 4;
 }
 
 
-static inline void draw_char(u32 pixels_per_line, u32 color, u8 c, u32 x, u32 y) {
+static inline void draw_char(u32 color, u8 c, u32 x, u32 y) {
     u32 *dest = fb_ptr + (y * pixels_per_line) + x;
     for (u32 l = 0; l < 16; l++) {
         uint8_t byte = unifont[c][l];
@@ -46,11 +57,20 @@ void fill_screen(u8 r, u8 g, u8 b) {
 
 
 void printstr(const u8 *str) {
-    u32 pixels_per_line = fb->pitch / 4;
-    u32 x = 0;
     while (*str != 0) {
-        draw_char(pixels_per_line, 0xFFFFFF, *str, x, 0);
-        x += 8;
+        draw_char(0xFFFFFF, *str, cs.x, cs.y);
+        cs.x += 8;
         str++;
     }
+}
+
+
+void putchar(const u8 c) {
+    u32 pixels_per_line = fb->pitch / 4;
+    if (cs.x >= pixels_per_line) {
+        cs.x = 0;
+        cs.y += 16;
+    }
+    draw_char(0xFFFFFF, c, cs.x, cs.y);
+    cs.x += 8;
 }
